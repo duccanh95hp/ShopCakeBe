@@ -1,0 +1,54 @@
+version: '3.8'
+services:
+  mysql-springboot-container:
+    image: mysql:8.0.28
+    container_name: mysql-springboot-container
+    ports:
+      - 3306:3306
+    volumes:
+      - mysql-springboot-data:/var/lib/mysql
+      - mysql-springboot-config-deamond:/etc/mysql/conf.d
+    environment:
+      MYSQL_USER: canhnd
+      MYSQL_PASSWORD: Abc@123456789
+      MYSQL_ROOT_PASSWORD: Abc@123456789
+      MYSQL_DATABASE: shop_cake
+    networks:
+      - backend
+  springboot-app:
+    image: duccanh/springboot-docker:v1.0.0
+    container_name: springboot-app
+    ports:
+      - 8090:8090
+    volumes:
+      - ./:/app
+    networks:
+      - backend
+  minio:
+    image: minio/minio:latest
+    container_name: minio-container
+    restart: always
+    command:
+      - server
+      - --console-address
+      - :9001
+      - /data
+    ports:
+      - 9000:9000
+      - 9001:9001
+    networks:
+      - backend
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minio}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-miniostorage}
+      MINIO_REGION_NAME: ${MINIO_REGION_NAME:-us-east-1}
+    volumes:
+      - ${PATH_DATA:-./data}/minio:/data
+#create network
+networks:
+  backend:
+    name: my-network
+volumes:
+  mysql-springboot-data:
+  mysql-springboot-config-deamond:
+
