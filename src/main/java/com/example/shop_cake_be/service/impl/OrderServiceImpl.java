@@ -39,6 +39,8 @@ public class OrderServiceImpl implements OrderService {
     DeliveryAddressRepo deliveryAddressRepo;
     @Autowired
     CakeRepo cakeRepo;
+    @Autowired
+    ShoppingCartTmtRepo shoppingCartTmtRepo;
     @Override
     public Order create(OrderPayload model) {
         try {
@@ -74,6 +76,8 @@ public class OrderServiceImpl implements OrderService {
                 detail.setPrice(orderDetail.getPrice());
                 detail.setQuantity(orderDetail.getQuantity());
                 orderDetailRepo.save(detail);
+                ShoppingCartTmt shoppingCartTmt = shoppingCartTmtRepo.findByUserIdAndCakeId(user.get().getId(), orderDetail.getCakeId()).get();
+                shoppingCartTmtRepo.delete(shoppingCartTmt);
             }
             return order;
         } catch (Exception e) {

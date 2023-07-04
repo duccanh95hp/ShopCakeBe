@@ -20,10 +20,11 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-
+@CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/files")
 public class FileUploadController {
+
     private final MinioClient minioClient;
 
     @Value("${minio.bucket}")
@@ -59,9 +60,9 @@ public class FileUploadController {
                             .expiry(24 * 60 * 60)
                             .build()
             );
-            String message = "File " + fileName + " uploaded successfully.";
-            message += " File URL: " + fileUrl;
-
+//            String message = "File " + fileName + " uploaded successfully.";
+//            message += " File URL: " + fileUrl;
+            String message = fileName;
             return ResponseEntity.status(HttpStatus.OK).body(message);
         } catch (MinioException | IOException e) {
             e.printStackTrace();
