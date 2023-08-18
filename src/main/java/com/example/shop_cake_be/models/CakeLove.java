@@ -5,13 +5,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
 
 @Entity
-@Table(name = "shopping_cart_tmt")
+@Table(name = "cake_love")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ShoppingCartTmt {
+public class CakeLove {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
@@ -20,8 +21,6 @@ public class ShoppingCartTmt {
     private Long userId;
     @Column(name = "cake_id")
     private Long cakeId;
-    @Column(name = "quantity")
-    private Integer quantity;
-    @Column(name = "price")
-    private Double price;
+    @Column(name = "status")
+    private int status;
 }

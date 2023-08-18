@@ -28,4 +28,5 @@ public class OrderPayload {
     private String deliveryDate;
 
     private List<OrderDetail> orderDetails;
+    private int limit;
 }

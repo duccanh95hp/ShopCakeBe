@@ -1,6 +1,7 @@
 package com.example.shop_cake_be.service.impl;
 
 import com.example.shop_cake_be.common.Page;
+import com.example.shop_cake_be.dto.CakeDto;
 import com.example.shop_cake_be.models.*;
 import com.example.shop_cake_be.payload.CakePayload;
 import com.example.shop_cake_be.repository.*;
@@ -31,9 +32,10 @@ public class CakeServiceImpl implements CakeService {
     CategoryRepo categoryRepo;
     @Autowired
     CakeCategoryRepo cakeCategoryRepo;
-
     @Autowired
     CakePromotionRepo cakePromotionRepo;
+    @Autowired
+    PromotionsRepo promotionsRepo;
     @Autowired
     UserRepository userRepository;
     @Override
@@ -46,7 +48,6 @@ public class CakeServiceImpl implements CakeService {
             throw new UsernameNotFoundException("User not found");
         }
         Cake cake = new Cake();
-
         cake.setName(model.getName());
         cake.setIngredient(model.getIngredient());
         cake.setPrice(model.getPrice());
@@ -74,25 +75,66 @@ public class CakeServiceImpl implements CakeService {
         cake.setSize(model.getSize());
         cake.setReason(model.getReason());
         cake.setUserId(user.get().getId());
+        cake.setPromotionId(0l);
+        cake.setSpecial(model.getSpecial());
+        cake.setLike(false);
         repo.save(cake);
-        String[] parts = model.getListCategoryId().split(",");
-        for (String part : parts) {
-            Long categoryId = Long.parseLong(part);
-            CakeCategory cakeCategory = new CakeCategory();
-            cakeCategory.setCakeId(cake.getId());
-            cakeCategory.setCategoryId(categoryId);
-            cakeCategoryRepo.save(cakeCategory);
+        if(!model.getListCategoryId().equals("")) {
+            String[] parts = model.getListCategoryId().split(",");
+            for (String part : parts) {
+                Long categoryId = Long.parseLong(part);
+                CakeCategory cakeCategory = new CakeCategory();
+                cakeCategory.setCakeId(cake.getId());
+                cakeCategory.setCategoryId(categoryId);
+                cakeCategoryRepo.save(cakeCategory);
+            }
         }
         return cake;
     }
 
     @Override
     public Page<Object> getAllAndSearch(CakePayload filter) {
+
         org.springframework.data.domain.Page<Cake> page = repo.getAllAndSearch(filter, PageRequest.of(filter.getPage() - 1, filter.getSize()));
         if(page.isEmpty()) {
             return null;
         }
-        List<Object> objectList = new ArrayList<>(page.getContent());
+        List<Object> objectList = new ArrayList<>();
+        for (Cake c : page.getContent()) {
+            CakeDto cakeDto = new CakeDto();
+            cakeDto.setId(c.getId());
+            cakeDto.setUserId(c.getUserId());
+            cakeDto.setName(c.getName());
+            cakeDto.setPrice(c.getPrice());
+            cakeDto.setIngredient(c.getIngredient());
+            cakeDto.setTitle(c.getTitle());
+            cakeDto.setDecorate(c.getDecorate());
+            cakeDto.setNote(c.getNote());
+            cakeDto.setSize(c.getSize());
+            cakeDto.setColor(c.getColor());
+            cakeDto.setReason(c.getReason());
+            cakeDto.setImage(c.getImage());
+            cakeDto.setStatus(c.getStatus());
+            cakeDto.setIsDeleted(c.getIsDeleted());
+            cakeDto.setSpecial(c.getSpecial());
+            cakeDto.setCreatedAt(c.getCreatedAt());
+            cakeDto.setUpdatedAt(c.getUpdatedAt());
+            cakeDto.setLike(c.isLike());
+            Optional<Promotions> promotions = promotionsRepo.findById(c.getPromotionId());
+            if(promotions.isPresent()) {
+                cakeDto.setDiscount(promotions.get().getDiscount());
+                cakeDto.setPromotionStartDate(promotions.get().getStartDate());
+                cakeDto.setPromotionEndDate(promotions.get().getEndDate());
+            }
+            List<CakeCategory> cakeCategories = cakeCategoryRepo.findByCakeId(c.getId());
+            List<Category> categories = new ArrayList<>();
+            for (CakeCategory cakeCategory : cakeCategories) {
+                Category category = categoryRepo.findById(cakeCategory.getCategoryId()).get();
+                categories.add(category);
+            }
+            cakeDto.setCategoryList(categories);
+            objectList.add(cakeDto);
+        }
         return com.example.shop_cake_be.common.Page.builder()
                 .result(objectList)
                 .totalPages(page.getTotalPages())
@@ -103,10 +145,38 @@ public class CakeServiceImpl implements CakeService {
     }
 
     @Override
-    public Optional<Cake> findById(long id) {
-        return repo.findById(id);
+    public CakeDto findById(long id) {
+        Optional<Cake> c = repo.findById(id);
+        if(c.isPresent()){
+            CakeDto cakeDto = new CakeDto();
+            cakeDto.setId(c.get().getId());
+            cakeDto.setUserId(c.get().getUserId());
+            cakeDto.setName(c.get().getName());
+            cakeDto.setPrice(c.get().getPrice());
+            cakeDto.setIngredient(c.get().getIngredient());
+            cakeDto.setTitle(c.get().getTitle());
+            cakeDto.setDecorate(c.get().getDecorate());
+            cakeDto.setNote(c.get().getNote());
+            cakeDto.setSize(c.get().getSize());
+            cakeDto.setColor(c.get().getColor());
+            cakeDto.setReason(c.get().getReason());
+            cakeDto.setImage(c.get().getImage());
+            cakeDto.setStatus(c.get().getStatus());
+            cakeDto.setIsDeleted(c.get().getIsDeleted());
+            cakeDto.setSpecial(c.get().getSpecial());
+            cakeDto.setCreatedAt(c.get().getCreatedAt());
+            cakeDto.setUpdatedAt(c.get().getUpdatedAt());
+            cakeDto.setLike(c.get().isLike());
+            Optional<Promotions> promotions = promotionsRepo.findById(c.get().getPromotionId());
+            if(promotions.isPresent()) {
+                cakeDto.setDiscount(promotions.get().getDiscount());
+                cakeDto.setPromotionStartDate(promotions.get().getStartDate());
+                cakeDto.setPromotionEndDate(promotions.get().getEndDate());
+            }
+            return cakeDto;
+        }
+        return null;
     }
-
     @Override
     public Optional<Cake> update(long id, Cake model) {
         Optional<Cake> cake = repo.findById(id);
@@ -123,18 +193,25 @@ public class CakeServiceImpl implements CakeService {
         cake.get().setNote(model.getNote());
         cake.get().setSize(model.getSize());
         cake.get().setReason(model.getReason());
+        cake.get().setSpecial(model.getSpecial());
+        cake.get().setPrice(model.getPrice());
+        cake.get().setListCategoryId(model.getListCategoryId());
         repo.save(cake.get());
         List<CakeCategory> cakeCategories = cakeCategoryRepo.findByCakeId(id);
         for (CakeCategory cakeCategory : cakeCategories) {
             cakeCategoryRepo.deleteById(cakeCategory.getId());
         }
-        String[] parts = model.getListCategoryId().split(",");
-        for (String part : parts) {
-            Long categoryId = Long.parseLong(part);
-            CakeCategory cakeCategory = new CakeCategory();
-            cakeCategory.setCakeId(id);
-            cakeCategory.setCategoryId(categoryId);
-            cakeCategoryRepo.save(cakeCategory);
+        if(!model.getListCategoryId().equals("")) {
+            String[] parts = model.getListCategoryId().split(",");
+
+            for (String part : parts) {
+                Long categoryId = Long.parseLong(part);
+                CakeCategory cakeCategory = new CakeCategory();
+                cakeCategory.setCakeId(id);
+                cakeCategory.setCategoryId(categoryId);
+                cakeCategoryRepo.save(cakeCategory);
+
+            }
         }
         return cake;
     }
@@ -196,5 +273,87 @@ public class CakeServiceImpl implements CakeService {
                 break;
         }
         return true;
+    }
+
+    @Override
+    public List<Cake> getCakeByPromotion(Long promotionId) {
+        List<Cake> cakes = repo.findByPromotionIdAndIsDeleted(promotionId, 1);
+        return cakes;
+    }
+
+    @Override
+    public List<CakeDto> findByCategory(Long categoryId) {
+        List<CakeCategory> cakeCategories = cakeCategoryRepo.findByCategoryId(categoryId);
+        List<CakeDto> cakes = new ArrayList<>();
+        for (CakeCategory cakeCategory : cakeCategories) {
+            Cake c = repo.findByIdAndIsDeleted(cakeCategory.getCakeId(), 1);
+            if(c != null) {
+                CakeDto cakeDto = new CakeDto();
+                cakeDto.setId(c.getId());
+                cakeDto.setUserId(c.getUserId());
+                cakeDto.setName(c.getName());
+                cakeDto.setPrice(c.getPrice());
+                cakeDto.setIngredient(c.getIngredient());
+                cakeDto.setTitle(c.getTitle());
+                cakeDto.setDecorate(c.getDecorate());
+                cakeDto.setNote(c.getNote());
+                cakeDto.setSize(c.getSize());
+                cakeDto.setColor(c.getColor());
+                cakeDto.setReason(c.getReason());
+                cakeDto.setImage(c.getImage());
+                cakeDto.setStatus(c.getStatus());
+                cakeDto.setIsDeleted(c.getIsDeleted());
+                cakeDto.setSpecial(c.getSpecial());
+                cakeDto.setCreatedAt(c.getCreatedAt());
+                cakeDto.setUpdatedAt(c.getUpdatedAt());
+                cakeDto.setLike(c.isLike());
+                Optional<Promotions> promotions = promotionsRepo.findById(c.getPromotionId());
+                if(promotions.isPresent()) {
+                    cakeDto.setDiscount(promotions.get().getDiscount());
+                    cakeDto.setPromotionStartDate(promotions.get().getStartDate());
+                    cakeDto.setPromotionEndDate(promotions.get().getEndDate());
+                }
+                cakes.add(cakeDto);
+            }
+        }
+        return cakes;
+    }
+
+    @Override
+    public List<CakeDto> getBySpecial() {
+        List<Cake> cakes = repo.findBySpecialAndIsDeleted(1,1);
+        List<CakeDto> cakeDtoList = new ArrayList<>();
+        if(!cakes.isEmpty()) {
+            for (Cake c : cakes) {
+                CakeDto cakeDto = new CakeDto();
+                cakeDto.setId(c.getId());
+                cakeDto.setUserId(c.getUserId());
+                cakeDto.setName(c.getName());
+                cakeDto.setPrice(c.getPrice());
+                cakeDto.setIngredient(c.getIngredient());
+                cakeDto.setTitle(c.getTitle());
+                cakeDto.setDecorate(c.getDecorate());
+                cakeDto.setNote(c.getNote());
+                cakeDto.setSize(c.getSize());
+                cakeDto.setColor(c.getColor());
+                cakeDto.setReason(c.getReason());
+                cakeDto.setImage(c.getImage());
+                cakeDto.setStatus(c.getStatus());
+                cakeDto.setIsDeleted(c.getIsDeleted());
+                cakeDto.setSpecial(c.getSpecial());
+                cakeDto.setCreatedAt(c.getCreatedAt());
+                cakeDto.setUpdatedAt(c.getUpdatedAt());
+                cakeDto.setLike(c.isLike());
+                Optional<Promotions> promotions = promotionsRepo.findById(c.getPromotionId());
+                if(promotions.isPresent()) {
+                    cakeDto.setDiscount(promotions.get().getDiscount());
+                    cakeDto.setPromotionStartDate(promotions.get().getStartDate());
+                    cakeDto.setPromotionEndDate(promotions.get().getEndDate());
+                }
+                cakeDtoList.add(cakeDto);
+            }
+            return cakeDtoList;
+        }
+        return null;
     }
 }

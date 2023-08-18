@@ -36,10 +36,20 @@ public class DeliveryAddressServiceImpl implements DeliveryAddressService {
             throw new UsernameNotFoundException("User not found");
         }
         // end
+
+        List<DeliveryAddress> addresses = repo.findByUserIdAndStatus(user.get().getId(),1);
+        if(!addresses.isEmpty()) {
+            for (DeliveryAddress d : addresses) {
+                d.setStatus(0);
+                repo.save(d);
+            }
+        }
+
         DeliveryAddress deliveryAddress = new DeliveryAddress();
         deliveryAddress.setUserId(user.get().getId());
         deliveryAddress.setAddress(address.getAddress());
         deliveryAddress.setPhone(address.getPhone());
+        deliveryAddress.setName(address.getName());
         deliveryAddress.setIsDeleted(1);
         deliveryAddress.setStatus(1);
         repo.save(deliveryAddress);
@@ -48,6 +58,14 @@ public class DeliveryAddressServiceImpl implements DeliveryAddressService {
 
     @Override
     public Page<Object> getAllAndSearch(DeliveryAddressPayload filter) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String username = userDetails.getUsername();
+        Optional<User> user = userRepository.findByUsername(username);
+        if (!user.isPresent()) {
+            throw new UsernameNotFoundException("User not found");
+        }
+        filter.setUserId(user.get().getId());
         org.springframework.data.domain.Page<DeliveryAddress> page = repo.getAllAndSearch(filter, PageRequest.of(filter.getPage() - 1, filter.getSize()));
         if(page.isEmpty()) {
             return null;
@@ -73,7 +91,9 @@ public class DeliveryAddressServiceImpl implements DeliveryAddressService {
         Optional<DeliveryAddress> da = repo.findById(id);
         if(da.isEmpty()) return Optional.empty();
         da.get().setAddress(model.getAddress());
-        da.get().setPhone(model.getAddress());
+        da.get().setPhone(model.getPhone());
+        da.get().setStatus(model.getStatus());
+        da.get().setName(model.getName());
         repo.save(da.get());
         return da;
     }
@@ -89,10 +109,24 @@ public class DeliveryAddressServiceImpl implements DeliveryAddressService {
 
     @Override
     public boolean procedure(long id, DeliveryAddressPayload payload) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String username = userDetails.getUsername();
+        Optional<User> user = userRepository.findByUsername(username);
+        if (!user.isPresent()) {
+            throw new UsernameNotFoundException("User not found");
+        }
         Optional<DeliveryAddress> da = repo.findById(id);
         if(da.isEmpty()) return false;
         switch (payload.getProcedure()) {
             case "hoạt động":
+                List<DeliveryAddress> addresses = repo.findByUserIdAndStatus(user.get().getId(),1);
+                if (!addresses.isEmpty()) {
+                    for (DeliveryAddress deliveryAddress : addresses){
+                        deliveryAddress.setStatus(0);
+                        repo.save(deliveryAddress);
+                    }
+                }
                 da.get().setStatus(1);
                 repo.save(da.get());
                 break;

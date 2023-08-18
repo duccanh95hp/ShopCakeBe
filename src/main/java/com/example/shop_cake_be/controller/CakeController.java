@@ -2,6 +2,7 @@ package com.example.shop_cake_be.controller;
 
 import com.example.shop_cake_be.common.Page;
 import com.example.shop_cake_be.common.Result;
+import com.example.shop_cake_be.dto.CakeDto;
 import com.example.shop_cake_be.models.Cake;
 import com.example.shop_cake_be.models.CakePromotion;
 import com.example.shop_cake_be.payload.CakePayload;
@@ -19,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 import static com.example.shop_cake_be.common.Constants.*;
@@ -49,11 +51,11 @@ public class CakeController {
     }
     @GetMapping("/findById/{id}")
     public Result<?> findById(@PathVariable("id") Long id) {
-        Optional<Cake> cake = service.findById(id);
-        if (cake.isEmpty()) {
+        CakeDto cakeDto = service.findById(id);
+        if (cakeDto == null) {
             return Result.result(HttpStatus.NO_CONTENT.value(), NOT_FOUND,null);
         }
-        return Result.result(HttpStatus.OK.value(),SUCCESS,cake);
+        return Result.result(HttpStatus.OK.value(),SUCCESS,cakeDto);
     }
     @PostMapping("/update/{id}")
     public Result<?> update(@PathVariable("id") long id, @RequestBody Cake model) throws JsonProcessingException {
@@ -106,5 +108,19 @@ public class CakeController {
         boolean cake = service.procedure(id, cakePayload);
         if(cake) return Result.result(HttpStatus.OK.value(), SUCCESS, null);
         return Result.result(HttpStatus.NO_CONTENT.value(), NOT_FOUND, null);
+    }
+    @GetMapping("/getCakeByPromotion")
+    public Result<?> getCakeByPromotion(@RequestParam Long promotionId){
+        List<Cake> cakes = service.getCakeByPromotion(promotionId);
+        return Result.result(HttpStatus.OK.value(), SUCCESS, cakes);
+    }
+    @PostMapping("/findByCategory/{id}")
+    public Result<?> findByCategory(@PathVariable("id") Long id){
+        List<CakeDto> cakes = service.findByCategory(id);
+        return Result.result(HttpStatus.OK.value(), SUCCESS, cakes);
+    }
+    @GetMapping("/getBySpecial")
+    public Result<?> getBySpecial(){
+        return Result.result(HttpStatus.OK.value(), SUCCESS, service.getBySpecial());
     }
 }

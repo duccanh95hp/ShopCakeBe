@@ -1,8 +1,10 @@
 package com.example.shop_cake_be.controller;
 
+import com.example.shop_cake_be.dto.UserDto;
 import com.example.shop_cake_be.models.ERole;
 import com.example.shop_cake_be.models.Role;
 import com.example.shop_cake_be.models.User;
+import com.example.shop_cake_be.payload.UserPayload;
 import com.example.shop_cake_be.payload.reponse.JwtResponse;
 import com.example.shop_cake_be.payload.reponse.MessageResponse;
 import com.example.shop_cake_be.payload.request.LoginRequest;
@@ -17,12 +19,17 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -79,7 +86,6 @@ public class AuthController {
                     .badRequest()
                     .body(new MessageResponse("Error: Email is already in use!"));
         }
-
         // Create new user's account
         User user = new User(signUpRequest.getUsername(),
                 signUpRequest.getEmail(),
@@ -119,5 +125,63 @@ public class AuthController {
         userRepository.save(user);
 
         return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+    }
+    @GetMapping("/detail")
+    public ResponseEntity<?> detail() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String username = userDetails.getUsername();
+        Optional<User> user = userRepository.findByUsername(username);
+        if (!user.isPresent()) {
+            throw new UsernameNotFoundException("User not found");
+        }
+        UserDto userDto = new UserDto();
+        userDto.setId(user.get().getId());
+        userDto.setUsername(user.get().getUsername());
+        userDto.setAddress(user.get().getAddress());
+
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+        if(user.get().getBirthday() != null) {
+            userDto.setBirthday(user.get().getBirthday().format(formatter));
+        }
+        userDto.setEmail(user.get().getEmail());
+        userDto.setTelephone(user.get().getTelephone());
+        userDto.setFullName(user.get().getFullName());
+        return ResponseEntity.ok(userDto);
+    }
+    @PostMapping("/update")
+    public ResponseEntity<?> update(@RequestBody UserPayload payload) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String username = userDetails.getUsername();
+        Optional<User> user = userRepository.findByUsername(username);
+        if (!user.isPresent()) {
+            throw new UsernameNotFoundException("User not found");
+        }
+        UserDto userDto = new UserDto();
+        try
+        {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+
+            LocalDate localDate = LocalDate.parse(payload.getBirthday(), formatter);
+            user.get().setAddress(payload.getAddress());
+            user.get().setBirthday(localDate);
+            user.get().setFullName(payload.getFullName());
+            user.get().setTelephone(payload.getTelephone());
+            userRepository.save(user.get());
+
+            userDto.setId(user.get().getId());
+            userDto.setUsername(user.get().getUsername());
+            userDto.setAddress(user.get().getAddress());
+
+            userDto.setBirthday(payload.getBirthday());
+            userDto.setEmail(user.get().getEmail());
+            userDto.setTelephone(user.get().getTelephone());
+            userDto.setFullName(user.get().getFullName());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(userDto);
     }
 }

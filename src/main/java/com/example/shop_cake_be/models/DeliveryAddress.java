@@ -32,5 +32,7 @@ public class DeliveryAddress implements Serializable {
     @NotNull
     @Column(name = "is_deleted")
     private int isDeleted;
+    @Column(name = "name")
+    private String name;
 }
 

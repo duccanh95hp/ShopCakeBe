@@ -21,7 +21,7 @@ import static com.example.shop_cake_be.common.Constants.*;
 public class DeliveryAddressController {
     @Autowired
     DeliveryAddressService service;
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+//    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping("/create")
     public Result<?> create(@RequestBody DeliveryAddress address) {
         DeliveryAddress deliveryAddress = service.create(address);

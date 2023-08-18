@@ -19,7 +19,6 @@ public class Cake implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
-
     @Column(name = "user_id")
     private Long userId;
     @NotNull
@@ -31,19 +30,14 @@ public class Cake implements Serializable {
     @NotNull
     @Column(name = "ingredient")
     private String ingredient;
-
     @Column(name = "title")
     private String title;
-
     @Column(name = "decorate")
     private String decorate;
-
     @Column(name = "note")
     private String note;
-
     @Column(name = "size")
     private String size;
-
     @Column(name = "color")
     private String color;
     @Column(name = "reason")
@@ -63,6 +57,12 @@ public class Cake implements Serializable {
     @NotNull
     @Column(name = "updated_at")
     private Date updatedAt;
+    @Column(name = "promotion_id")
+    private Long promotionId;
+    @Column(name = "special")
+    private int special;
+    @Column(name = "is_like")
+    private boolean isLike;
 
     @Transient
     private String listCategoryId;

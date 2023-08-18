@@ -43,6 +43,7 @@ public class ShoppingCartTmtServiceImpl implements ShoppingCartTmtService {
             tmt.setUserId(user().getId());
             tmt.setCakeId(model.getCakeId());
             tmt.setQuantity(model.getQuantity());
+            tmt.setPrice(model.getPrice());
             shoppingCartTmtRepo.save(tmt);
             return tmt;
         } else {
@@ -70,7 +71,7 @@ public class ShoppingCartTmtServiceImpl implements ShoppingCartTmtService {
             dto.setShoppingCartTmtId(tmt.getId());
             dto.setCakeId(tmt.getCakeId());
             dto.setNameCake(cake.get().getName());
-            dto.setPriceCake(cake.get().getPrice());
+            dto.setPriceCake(tmt.getPrice());
             dto.setQuantityShoppingCartTmt(tmt.getQuantity());
             dto.setImageCake(cake.get().getImage());
             objectList.add(dto);

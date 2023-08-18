@@ -9,11 +9,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 @Data
-public class DeliveryAddressPayload {
-    private String name;
-    private int size;
-    private int page;
-    private String address;
-    private String procedure;
-    private Long userId;
+public class PromotionAddOrDelPayLoad {
+    private Long promotionId;
+    private int type;
+    // 1 : thêm , 2 : xóa
+    private Long[] listCakeId;
 }

@@ -1,8 +1,11 @@
 package com.example.shop_cake_be.service.impl;
 
 import com.example.shop_cake_be.common.Page;
+import com.example.shop_cake_be.models.Cake;
 import com.example.shop_cake_be.models.Promotions;
+import com.example.shop_cake_be.payload.PromotionAddOrDelPayLoad;
 import com.example.shop_cake_be.payload.PromotionsPayload;
+import com.example.shop_cake_be.repository.CakeRepo;
 import com.example.shop_cake_be.repository.PromotionsRepo;
 import com.example.shop_cake_be.service.PromotionsService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +22,8 @@ import java.util.Optional;
 public class PromotionsServiceImpl implements PromotionsService {
     @Autowired
     PromotionsRepo promotionsRepo;
+    @Autowired
+    CakeRepo cakeRepo;
     @Override
     public Promotions create(PromotionsPayload model) {
         Promotions promotions = new Promotions();
@@ -80,6 +85,13 @@ public class PromotionsServiceImpl implements PromotionsService {
     public boolean delete(long id) {
         Optional<Promotions> promotions = promotionsRepo.findById(id);
         if(promotions.isEmpty()) return false;
+        List<Cake> cakes = cakeRepo.findByPromotionIdAndIsDeleted(id, 1);
+        if(!cakes.isEmpty()) {
+            for (Cake cake : cakes) {
+                cake.setPromotionId(0L);
+                cakeRepo.save(cake);
+            }
+        }
         promotions.get().setIsDeleted(0);
         promotionsRepo.save(promotions.get());
         return true;
@@ -102,6 +114,31 @@ public class PromotionsServiceImpl implements PromotionsService {
                 break;
         }
         return true;
+    }
+
+    @Override
+    public boolean promotionAddOrDelCake(PromotionAddOrDelPayLoad payLoad) {
+        //thêm
+        if(payLoad.getType() == 1) {
+            for (Long id : payLoad.getListCakeId()) {
+                Optional<Cake> cake = cakeRepo.findById(id);
+                if(cake.isPresent()) {
+                    cake.get().setPromotionId(payLoad.getPromotionId());
+                    cakeRepo.save(cake.get());
+                }
+            }
+            return true;
+        } else if(payLoad.getType() == 2) {
+            for (Long id : payLoad.getListCakeId()) {
+                Optional<Cake> cake = cakeRepo.findById(id);
+                if(cake.isPresent()) {
+                    cake.get().setPromotionId(0l);
+                    cakeRepo.save(cake.get());
+                }
+            }
+            return true;
+        }
+        return false;
     }
 }
 

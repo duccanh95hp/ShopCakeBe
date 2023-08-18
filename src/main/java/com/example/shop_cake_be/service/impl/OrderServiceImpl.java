@@ -1,8 +1,7 @@
 package com.example.shop_cake_be.service.impl;
 
 import com.example.shop_cake_be.common.Page;
-import com.example.shop_cake_be.dto.OrderDetailDto;
-import com.example.shop_cake_be.dto.OrderDto;
+import com.example.shop_cake_be.dto.*;
 import com.example.shop_cake_be.filter.OrderFilter;
 import com.example.shop_cake_be.models.*;
 import com.example.shop_cake_be.payload.OrderPayload;
@@ -17,7 +16,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -63,7 +64,7 @@ public class OrderServiceImpl implements OrderService {
             order.setOrderCode(formattedDateTime);
             order.setNote(model.getNote());
             order.setReason(model.getReason());
-            order.setStatus(model.getStatus());
+            order.setStatus(1);
             order.setDeliveryDate(localDateTime);
             order.setUpdatedAt(currentDateTime);
             order.setCreatedAt(currentDateTime);
@@ -76,8 +77,21 @@ public class OrderServiceImpl implements OrderService {
                 detail.setPrice(orderDetail.getPrice());
                 detail.setQuantity(orderDetail.getQuantity());
                 orderDetailRepo.save(detail);
-                ShoppingCartTmt shoppingCartTmt = shoppingCartTmtRepo.findByUserIdAndCakeId(user.get().getId(), orderDetail.getCakeId()).get();
-                shoppingCartTmtRepo.delete(shoppingCartTmt);
+                Optional<ShoppingCartTmt> shoppingCartTmt = shoppingCartTmtRepo.findByUserIdAndCakeId(user.get().getId(), orderDetail.getCakeId());
+                if(shoppingCartTmt.isPresent()) {
+                    shoppingCartTmtRepo.delete(shoppingCartTmt.get());
+                }
+            }
+            // set status deliveryAddress
+            Optional<DeliveryAddress> deliveryAddress = deliveryAddressRepo.findById(model.getDeliveryAddressId());
+            if(deliveryAddress.isPresent()) {
+                List<DeliveryAddress> address = deliveryAddressRepo.findByUserIdAndStatus(user.get().getId(),1);
+                if(!address.isEmpty()) {
+                    for (DeliveryAddress d : address) {
+                        d.setStatus(0);
+                    }
+                }
+                deliveryAddress.get().setStatus(1);
             }
             return order;
         } catch (Exception e) {
@@ -118,7 +132,7 @@ public class OrderServiceImpl implements OrderService {
 
         for (Order order : page) {
             OrderDto orderDto = new OrderDto();
-            User user = userRepository.findById(order.getId()).get();
+            User user = userRepository.findById(order.getUserId()).get();
             orderDto.setId(order.getId());
             orderDto.setName(user.getUsername());
             orderDto.setEmail(user.getEmail());
@@ -127,6 +141,7 @@ public class OrderServiceImpl implements OrderService {
             orderDto.setDeliveryAddress(deliveryAddress.getAddress());
             orderDto.setPhone(deliveryAddress.getPhone());
             orderDto.setStatus(order.getStatus());
+            orderDto.setReason(order.getReason());
             orderDto.setDeliveryDate(order.getDeliveryDate());
             orderDto.setCreatedAt(order.getCreatedAt());
             objectList.add(orderDto);
@@ -141,7 +156,10 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<OrderDetailDto> detailOrder(long orderId) {
+    public OrderDetailStatusDto detailOrder(long orderId) {
+        OrderDetailStatusDto orderDetailStatusDto = new OrderDetailStatusDto();
+        Order order = orderRepo.findById(orderId).get();
+        orderDetailStatusDto.setStatus(order.getStatus());
         List<OrderDetail> orderDetails = orderDetailRepo.findByOrderId(orderId);
         List<OrderDetailDto> orderDetailDtos = new ArrayList<>();
         if(orderDetails.isEmpty()) {
@@ -156,7 +174,8 @@ public class OrderServiceImpl implements OrderService {
             orderDetailDto.setImage(cake.getImage());
             orderDetailDtos.add(orderDetailDto);
         }
-        return orderDetailDtos;
+        orderDetailStatusDto.setDetailDtoList(orderDetailDtos);
+        return orderDetailStatusDto;
     }
 
     @Override
@@ -178,6 +197,12 @@ public class OrderServiceImpl implements OrderService {
                 break;
             case REJECT:
                 order.get().setStatus(5);
+                order.get().setReason(payload.getReason());
+                orderRepo.save(order.get());
+                break;
+            case CANCEL:
+                order.get().setStatus(5);
+                order.get().setReason(payload.getReason());
                 orderRepo.save(order.get());
                 break;
             default:
@@ -188,4 +213,46 @@ public class OrderServiceImpl implements OrderService {
         return true;
     }
 
+    @Override
+    public List<TopUserOrderDto> topUserOrderDto(OrderPayload payload) {
+        OrderFilter filter = new OrderFilter();
+        filter.setStatus(payload.getStatus());
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+        LocalDateTime fromDay = LocalDateTime.of(LocalDate.parse(payload.getFromDate(), formatter), LocalTime.MIN);
+        LocalDateTime toDay = LocalDateTime.of(LocalDate.parse(payload.getToDate(), formatter), LocalTime.MAX);
+        filter.setFromDate(fromDay);
+        filter.setToDate(toDay);
+        List<TopUserOrderResultDto> objects = orderRepo.topUserByOrder(filter);
+        if(objects.size() > payload.getLimit()) {
+            objects = objects.subList(0,payload.getLimit());
+        }
+        List<TopUserOrderDto> topUserOrderDtoList = new ArrayList<>();
+        Double count = 0d;
+        for (TopUserOrderResultDto o : objects) {
+
+            TopUserOrderDto topUserOrderDto = new TopUserOrderDto();
+            Optional<User> user = userRepository.findById(o.getUserId());
+            if(!user.isPresent()) {
+                throw new UsernameNotFoundException("User not found");
+            }
+            topUserOrderDto.setIdUser(o.getUserId());
+            topUserOrderDto.setAddress(user.get().getAddress());
+            topUserOrderDto.setEmail(user.get().getEmail());
+            topUserOrderDto.setPhone(user.get().getTelephone());
+            topUserOrderDto.setName(user.get().getUsername());
+            topUserOrderDto.setQuantity(o.getQuantity());
+            List<Order> orders = orderRepo.findByUserIdAndStatus(o.getUserId(), payload.getStatus());
+            for (Order order : orders) {
+                List<OrderDetail> orderDetails = orderDetailRepo.findByOrderId(order.getId());
+                for (OrderDetail orderDetail : orderDetails) {
+                    count = count + (orderDetail.getPrice() * orderDetail.getQuantity());
+                }
+            }
+            topUserOrderDto.setTotalMoney(count);
+
+            topUserOrderDtoList.add(topUserOrderDto);
+            count = 0d;
+        }
+        return topUserOrderDtoList;
+    }
 }

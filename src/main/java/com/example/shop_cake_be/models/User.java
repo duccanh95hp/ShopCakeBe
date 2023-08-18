@@ -7,6 +7,7 @@ import javax.persistence.*;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -36,6 +37,14 @@ public class User {
     @Size(max = 120)
     private String password;
 
+    @Column(name = "birthday")
+    private LocalDate birthday;
+    @Column(name = "telephone")
+    private String telephone;
+    @Column(name = "full_name")
+    private String fullName;
+    @Column(name = "address")
+    private String address;
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(	name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),

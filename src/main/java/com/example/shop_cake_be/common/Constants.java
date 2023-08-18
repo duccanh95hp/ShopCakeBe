@@ -19,4 +19,5 @@ public class Constants {
     public static final String ACTIVE = "hoạt động";
     public static final String IN_ACTIVE = "không hoạt động";
     public static final String WAIT_CONFIRM = "chờ xác nhận";
+    public static final String CANCEL = "hủy";
 }

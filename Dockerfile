@@ -13,8 +13,6 @@ RUN apt-get update && apt-get install -y dos2unix
 
 # Chuyển đổi line endings của file mvnw
 RUN dos2unix mvnw
-
-
 # Sao chép các tệp còn lại
 COPY src ./src
 

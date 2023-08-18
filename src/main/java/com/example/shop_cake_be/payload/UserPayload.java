@@ -5,15 +5,18 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Data
-public class DeliveryAddressPayload {
-    private String name;
-    private int size;
-    private int page;
+public class UserPayload {
+    private Long id;
+    private String username;
+    private String email;
+    private String birthday;
+    private String telephone;
+    private String fullName;
     private String address;
-    private String procedure;
-    private Long userId;
 }

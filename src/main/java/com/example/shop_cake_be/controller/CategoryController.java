@@ -7,6 +7,7 @@ import com.example.shop_cake_be.payload.CategoryPayload;
 import com.example.shop_cake_be.service.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
@@ -19,12 +20,13 @@ import static com.example.shop_cake_be.common.Constants.*;
 public class CategoryController {
     @Autowired
     CategoryService categoryService;
-
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping("/create")
     public Result<?> create(@RequestBody Category category) {
         Category cat = categoryService.create(category);
         return Result.result(HttpStatus.OK.value(), SUCCESS, cat);
     }
+
     @PostMapping("/getAll")
     public Result<?> getAll(@RequestBody CategoryPayload filter) {
         Page<Object> categories = categoryService.getAllAndSearch(filter);
@@ -42,6 +44,7 @@ public class CategoryController {
         }
         return Result.result(HttpStatus.OK.value(),SUCCESS,category);
     }
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping("/update/{id}")
     public Result<?> update(@PathVariable("id") long id, @RequestBody Category category) {
         Optional<Category> cat = categoryService.update(id, category);
@@ -50,6 +53,7 @@ public class CategoryController {
         }
         return Result.result(HttpStatus.OK.value(), SUCCESS, cat);
     }
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @GetMapping("/delete/{id}")
     public Result<?> delete(@PathVariable("id") long id) {
         boolean cat = categoryService.delete(id);

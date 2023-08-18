@@ -1,7 +1,11 @@
 package com.example.shop_cake_be.service.impl;
 
+import com.example.shop_cake_be.models.Cake;
+import com.example.shop_cake_be.models.CakeCategory;
 import com.example.shop_cake_be.models.Category;
 import com.example.shop_cake_be.payload.CategoryPayload;
+import com.example.shop_cake_be.repository.CakeCategoryRepo;
+import com.example.shop_cake_be.repository.CakeRepo;
 import com.example.shop_cake_be.repository.CategoryRepo;
 import com.example.shop_cake_be.service.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +22,10 @@ import java.util.Optional;
 public class CategoryServiceImpl implements CategoryService {
     @Autowired
     CategoryRepo categoryRepo;
+    @Autowired
+    CakeRepo cakeRepo;
+    @Autowired
+    CakeCategoryRepo cakeCategoryRepo;
     @Override
     public Category create(Category category) {
         Category cat = new Category();
@@ -73,6 +81,12 @@ public class CategoryServiceImpl implements CategoryService {
         }
         category.get().setIsDeleted(0);
         categoryRepo.save(category.get());
+        List<CakeCategory> cakeCategories = cakeCategoryRepo.findByCategoryId(id);
+        if (cakeCategories.size() > 0) {
+            for (CakeCategory cakeCategory : cakeCategories) {
+              cakeCategoryRepo.delete(cakeCategory);
+            }
+        }
         return true;
     }
 

@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @NoArgsConstructor
@@ -18,4 +19,5 @@ public class OrderFilter {
     private LocalDateTime toDate;
     private int size;
     private int page;
+    private int limit;
 }

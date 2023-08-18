@@ -5,21 +5,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class OrderDto {
-    private Long id;
+public class TopUserOrderDto {
+    private Long idUser;
     private String name;
     private String email;
-    private String orderCode;
-    private String deliveryAddress;
     private String phone;
-    private int status;
-    private String reason;
-    private LocalDateTime deliveryDate;
-    private LocalDateTime createdAt;
+    private String address;
+    private Long quantity;
+    private Double totalMoney;
 }

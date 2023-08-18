@@ -3,6 +3,8 @@ package com.example.shop_cake_be.controller;
 import com.example.shop_cake_be.common.Page;
 import com.example.shop_cake_be.common.Result;
 import com.example.shop_cake_be.dto.OrderDetailDto;
+import com.example.shop_cake_be.dto.OrderDetailStatusDto;
+import com.example.shop_cake_be.dto.TopUserOrderDto;
 import com.example.shop_cake_be.models.Order;
 import com.example.shop_cake_be.payload.OrderPayload;
 import com.example.shop_cake_be.service.OrderService;
@@ -39,7 +41,7 @@ public class OrderController {
     }
     @GetMapping("/findById/{id}")
     public Result<?> findById(@PathVariable("id") Long id) {
-        List<OrderDetailDto> orderDto = orderService.detailOrder(id);
+        OrderDetailStatusDto orderDto = orderService.detailOrder(id);
         if (orderDto == null) {
             return Result.result(HttpStatus.NO_CONTENT.value(), NOT_FOUND,null);
         }
@@ -50,5 +52,11 @@ public class OrderController {
         boolean order = orderService.procedure(id, payload);
         if(order) return Result.result(HttpStatus.OK.value(), SUCCESS, null);
         return Result.result(HttpStatus.NO_CONTENT.value(), NOT_FOUND, null);
+    }
+
+    @PostMapping("/topUserOrder")
+    public Result<?> topUserOrder(@RequestBody OrderPayload payload) {
+        List<TopUserOrderDto> topUserOrderDtos = orderService.topUserOrderDto(payload);
+        return Result.result(HttpStatus.OK.value(), "Ok", topUserOrderDtos);
     }
 }
